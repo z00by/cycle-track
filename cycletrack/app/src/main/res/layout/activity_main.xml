@@ -9,8 +9,13 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="uk.co.zoobyware.cycletrack.MainActivity">
 
-    <TextView
+    <ToggleButton
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Hello World!" />
+        android:layout_centerVertical="true"
+        android:layout_centerHorizontal="true"
+        android:id="@+id/toggleTrackingButton"
+        android:textOff="@string/start_tracking"
+        android:textOn="@string/stop_tracking"
+        android:onClick="toggleTracking" />
 </RelativeLayout>
