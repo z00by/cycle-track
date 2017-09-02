@@ -15,12 +15,16 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationServices;
 import com.jakewharton.threetenabp.AndroidThreeTen;
+
+import org.threeten.bp.Instant;
+import org.threeten.bp.ZoneId;
 
 import java.io.File;
 import java.io.IOException;
@@ -29,6 +33,10 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerException;
 
 import uk.co.zoobyware.cycletrack.output.GpxBuilder;
+
+import static android.location.LocationProvider.AVAILABLE;
+import static android.location.LocationProvider.OUT_OF_SERVICE;
+import static android.location.LocationProvider.TEMPORARILY_UNAVAILABLE;
 
 public class MainActivity extends AppCompatActivity implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, ActivityCompat.OnRequestPermissionsResultCallback {
 
@@ -47,6 +55,8 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
 
     private Location previous = null;
 
+    private TextView statusText;
+
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -54,6 +64,8 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         AndroidThreeTen.init(this);
 
         setContentView(R.layout.activity_main);
+
+        statusText = (TextView)findViewById(R.id.trackingStatus);
 
         // Create an instance of GoogleAPIClient
         if (googleApiClient == null) {
@@ -73,33 +85,43 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                 recordLocation(location);
             }
 
-            public void onStatusChanged(final String provider, final int status, final Bundle extras) {
+            public void onStatusChanged(final String provider, final int updatedStatus, final Bundle extras) {
+                if (updatedStatus == OUT_OF_SERVICE) {
+                    statusText.setText(getText(R.string.location_out_of_service));
+                } else if(updatedStatus == TEMPORARILY_UNAVAILABLE) {
+                    statusText.setText(getText(R.string.no_location));
+                } else if(updatedStatus == AVAILABLE) {
+                    statusText.setText(getText(R.string.found_location));
+                }
             }
 
             public void onProviderEnabled(final String provider) {
+                statusText.setText(getText(R.string.location_enabled));
             }
 
             public void onProviderDisabled(final String provider) {
+                statusText.setText(getText(R.string.location_disabled));
             }
         };
-
     }
 
-    public void recordLocation(final Location loc) {
+    public void recordLocation(final Location location) {
         final float minMovement = 10;
         final long minTime = 2;
         float distance = 0;
         long time = 0;
 
         if (previous != null) {
-            distance = loc.distanceTo(previous);
-            time = loc.getTime() - previous.getTime();
+            distance = location.distanceTo(previous);
+            time = location.getTime() - previous.getTime();
         }
 
         if (previous == null || (distance >= minMovement && time >= minTime)) {
-            gpxBuilder.location(loc);
-            previous = loc;
+            gpxBuilder.location(location);
+            previous = location;
         }
+
+        statusText.setText(getString(R.string.location_updated, Instant.ofEpochMilli(location.getTime()).atZone(ZoneId.systemDefault()).toString()));
     }
 
     @Override
@@ -122,7 +144,9 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
 
     private void saveGpx() {
         try {
+            statusText.setText(getText(R.string.writing));
             gpxBuilder.write(getStorageDirectory());
+            statusText.setText(getText(R.string.written));
         } catch (TransformerException | ParserConfigurationException e) {
             Log.e(LOG_TAG, "Failed to create xml gpxBuilder", e);
 
@@ -176,6 +200,8 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         gpxBuilder.track();
 
         tracking = true;
+
+        statusText.setText(getText(R.string.tracking));
     }
 
     private boolean isFineLocationPending() {
@@ -191,6 +217,8 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         previous = null;
 
         tracking = false;
+
+        statusText.setText(R.string.not_tracking);
 
         saveGpx();
     }
