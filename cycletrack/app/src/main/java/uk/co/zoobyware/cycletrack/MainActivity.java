@@ -110,8 +110,6 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, WRITE_PERMISSION);
-        } else {
-            Log.i(LOG_TAG, "already allowed to write external storage");
         }
     }
 
@@ -216,9 +214,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
 
         if (isExternalStorageWritable()) {
             file = new File(Environment.getExternalStorageDirectory(), "uk.co.zoobyware.cycletrack");
-            Log.i(LOG_TAG, "external storage: " + file.getAbsolutePath());
         } else {
-            Log.i(LOG_TAG, "internal storage");
             file = new File(Environment.getDataDirectory(), "uk.co.zoobyware.cycletrack");
         }
 
